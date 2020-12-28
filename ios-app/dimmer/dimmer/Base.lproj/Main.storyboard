@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+    <device id="retina5_5" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="dimmer" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="736"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="yfq-1D-xM3">
+                                <rect key="frame" x="182" y="384" width="76" height="45"/>
+                                <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="yfq-1D-xM3" secondAttribute="height" multiplier="76:45" id="3sc-Ae-qfh"/>
+                                </constraints>
+                                <state key="normal" title="OFF">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="handleButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="AHc-3x-NU9"/>
+                                </connections>
+                            </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="7PC-6e-Ieh">
+                                <rect key="frame" x="156" y="479" width="86" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="7PC-6e-Ieh" secondAttribute="height" multiplier="43:15" id="5K9-KY-0Gt"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="15" minValue="0.0" maxValue="30" translatesAutoresizingMaskIntoConstraints="NO" id="bmm-YF-Zzr">
+                                <rect key="frame" x="18" y="558" width="378" height="31"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="bmm-YF-Zzr" secondAttribute="height" multiplier="187:15" id="IlW-BL-Y91"/>
+                                </constraints>
+                                <connections>
+                                    <action selector="handleSlider:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Mu2-b6-hX5"/>
+                                </connections>
+                            </slider>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ZE8-bw-JUS">
+                                <rect key="frame" x="361" y="24" width="20" height="23"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="ZE8-bw-JUS" secondAttribute="height" multiplier="20:23" id="IL9-ql-Dle"/>
+                                </constraints>
+                                <state key="normal" image="goforward" catalog="system"/>
+                                <connections>
+                                    <action selector="reload:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Wdn-vN-Jrg"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="7PC-6e-Ieh" secondAttribute="trailing" constant="172" id="0qN-Sq-Iww"/>
+                            <constraint firstItem="bmm-YF-Zzr" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="2aa-jw-sWC"/>
+                            <constraint firstItem="yfq-1D-xM3" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="161" id="G9u-Rn-XNE"/>
+                            <constraint firstItem="7PC-6e-Ieh" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="156" id="RdG-2e-VLg"/>
+                            <constraint firstItem="ZE8-bw-JUS" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="24" id="TiV-Qb-IPc"/>
+                            <constraint firstItem="bmm-YF-Zzr" firstAttribute="top" secondItem="7PC-6e-Ieh" secondAttribute="bottom" constant="49" id="VOQ-mk-ANu"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="7PC-6e-Ieh" secondAttribute="trailing" constant="172" id="W2u-4l-qcC"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="bmm-YF-Zzr" secondAttribute="trailing" constant="20" id="bz8-7K-5gy"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="yfq-1D-xM3" secondAttribute="trailing" constant="177" id="e5h-u2-qMB"/>
+                            <constraint firstItem="7PC-6e-Ieh" firstAttribute="top" secondItem="yfq-1D-xM3" secondAttribute="bottom" constant="88" id="iFg-RS-ubk"/>
+                            <constraint firstItem="bmm-YF-Zzr" firstAttribute="top" secondItem="7PC-6e-Ieh" secondAttribute="bottom" constant="49" id="l9E-3S-E8U"/>
+                            <constraint firstItem="7PC-6e-Ieh" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="156" id="rE4-Oa-eiI"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="ZE8-bw-JUS" secondAttribute="trailing" constant="33" id="s87-j7-VdS"/>
+                            <constraint firstItem="yfq-1D-xM3" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="346" id="wMB-PT-gar"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="button" destination="yfq-1D-xM3" id="WDE-xc-vnn"/>
+                        <outlet property="connectionStatusBar" destination="7PC-6e-Ieh" id="Fk5-45-sTK"/>
+                        <outlet property="slider" destination="bmm-YF-Zzr" id="J7b-Sc-p0U"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="137.68115942028987" y="93.750000000000014"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="goforward" catalog="system" width="121" height="128"/>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>
