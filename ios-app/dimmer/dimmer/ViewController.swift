@@ -60,7 +60,7 @@ class ViewController: UIViewController {
         if self.connectionFree{
             self.connectionFree = false
             self.dataTask?.cancel()
-            let url = URLComponents(string: self.url+"dimm? dimmval="+String(Int(value))+"&token="+self.serverToken!)
+            let url = URLComponents(string: self.url+"dimm?dimmval="+String(Int(value))+"&token="+self.serverToken!)
             if let url = url{
                 guard let url = url.url else{
                     print("dimmer error")
@@ -69,13 +69,11 @@ class ViewController: UIViewController {
                 self.dataTask = session.dataTask(with: url){ data, response, error in
                     defer{
                         self.dataTask = nil
+                        self.connectionFree = true
                     }
                     if let error = error{
                         print("error in dimmer: \(error)")
                         return
-                    }
-                    if (response as? HTTPURLResponse) != nil{
-                        self.connectionFree = true
                     }
                 }
             }
@@ -105,7 +103,6 @@ class ViewController: UIViewController {
                         }
                         if let error = error{
                             print("error in dataTask handleButton(): \(error.localizedDescription)")
-//                            self.connectionFree = true
                             DispatchQueue.main.async {
                                 self.updateconnectionStatusBar(text: "Connection failure", color: .systemRed)
                                 self.disableSlider()
@@ -114,7 +111,6 @@ class ViewController: UIViewController {
                             return
                         }
                         if let data = data, let dataString = String(data: data, encoding: .utf8), let response = response as? HTTPURLResponse{
-//                            self.connectionFree = true
                             if response.statusCode == 200{
                                 DispatchQueue.main.async {
                                     self.enableSlider()
@@ -143,7 +139,6 @@ class ViewController: UIViewController {
                         }
                         if let error = error{
                             print("error in dataTask: \(error.localizedDescription)")
-//                            self.connectionFree = true
                             DispatchQueue.main.async {
                                 self.updateconnectionStatusBar(text: "Connection failure", color: .systemRed)
                                 self.disableSlider()
@@ -152,7 +147,6 @@ class ViewController: UIViewController {
                             return
                         }
                         if let response = response as? HTTPURLResponse{
-//                            self.connectionFree = true
                             if response.statusCode == 200{
                                 DispatchQueue.main.async {
                                     self.disableSlider()
@@ -190,7 +184,6 @@ extension ViewController{
                     }
                     if let error = error{
                         print("error in datatask in checkStatus(): \(error)")
-//                        self.connectionFree = true
                         DispatchQueue.main.async {
                             self.updateconnectionStatusBar(text: "Connection failure", color: .systemRed)
                             self.disableSlider()
@@ -199,7 +192,6 @@ extension ViewController{
                         return
                     }
                     if let data = data, let dataString = String(data: data, encoding: .utf8), let response = response as? HTTPURLResponse{
-//                        self.connectionFree = true
                         if response.statusCode == 200{
                             let tmp = dataString.components(separatedBy: ":")
                             self.serverToken = tmp.first
