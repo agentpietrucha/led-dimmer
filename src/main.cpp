@@ -40,6 +40,7 @@ void switchOff(){
     lastPinVoltage = pinVoltage;
     pinVoltage = 0;
     server.setContentLength(3);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "text/plain", "off");
     Serial.println("off");
   }
@@ -48,6 +49,7 @@ void switchOn(){
   if(loginStatus == true && server.arg("token") == authToken){
     pinVoltage = lastPinVoltage;
     server.setContentLength(((String) pinVoltage).length());
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "text/plain", (String) pinVoltage);
     Serial.println("turn on");
   }
@@ -57,6 +59,7 @@ void dimm(){
   if(server.arg("dimmval") != "" && loginStatus && server.arg("token") == authToken){
     pinVoltage = server.arg("dimmval").toInt();
     server.setContentLength(3);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "text/plain", "dim");
     Serial.print("dimming: ");
     Serial.println(server.arg("dimmval"));
@@ -77,13 +80,13 @@ void authenticate(){
     loginStatus = true;
     generateToken();
     server.setContentLength(authToken.length() + ((String) pinVoltage).length() + 1);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "text/plain", authToken + ":" + (String) pinVoltage);
-    blinkLed(2);
   } else{
     loginStatus = false;
     server.setContentLength(1);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(100, "text/plain", "F");
-    blinkLed(5);
   }
 }
 
