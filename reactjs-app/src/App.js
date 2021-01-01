@@ -1,37 +1,48 @@
-import logo from './logo.svg';
 import './App.css';
 import React from 'react';
 import Slider from '@material-ui/core/Slider';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import { withStyles } from '@material-ui/core/styles';
 
-function checkStatus() {
+function checkStatus(x) {
   return fetch('http://192.168.1.184:80/auth?key=sawicki', { method: 'GET' })
     .then(response => response)
     .then((resp) => {
       return resp;
     }).catch(err => {
       console.log('error auth: ', err);
+      x.setState({
+        connectionStatus: 'Connection failure',
+        connectionStatusColor: 'red'
+      });
     });
 }
 
-function switchReq(token, state) {
+function switchReq(token, state, x) {
   return fetch(`http://192.168.1.184:80/switch/${state}?token=${token}`, { method: 'GET' })
     .then(response => response)
     .then(resp => {
       return resp;
     }).catch(err => {
       console.log('error switch: ', err);
+      x.setState({
+        connectionStatus: 'Connection failure',
+        connectionStatusColor: 'red'
+      });
     });
 }
 
-function dimmReq(token, value) {
+function dimmReq(token, value, x) {
   return fetch(`http://192.168.1.184:80/dimm?dimmval=${value}&token=${token}`, { method: 'GET' })
     .then(response => response)
     .then(resp => {
       return resp;
     }).catch(err => {
       console.log('dimm error: ', err);
+      x.setState({
+        connectionStatus: 'Connection failure',
+        connectionStatusColor: 'red'
+      });
     });
 }
 
@@ -57,36 +68,38 @@ class App extends React.Component {
   componentDidMount() {
     if (this.connectionFree) {
       this.connectionFree = false;
-      checkStatus().then(data => {
-        let statusCode = data.status;
-        data.text().then(dataText => {
-          this.token = dataText.split(':')[0];
-          if (statusCode == 200) {
-            let tmp = parseInt(dataText.split(':')[1])
-            if(tmp === 0){
+      checkStatus(this).then(data => {
+        if(data !== undefined){
+          data.text().then(dataText => {
+            if (data.status === 200) {
+              let statusCode = data.status;
+              this.token = dataText.split(':')[0];
+              let tmp = parseInt(dataText.split(':')[1])
+              if(tmp === 0){
+                this.setState({
+                  sliderCurrValue: tmp,
+                  connectionStatus: 'Connected',
+                  connectionStatusColor: '#0bb164',
+                  buttonText: 'OFF',
+                  buttonColor: '#ea1010'
+                });
+              } else{
+                this.setState({
+                  sliderCurrValue: tmp,
+                  connectionStatus: 'Connected',
+                  connectionStatusColor: '#0bb164',
+                  buttonText: 'ON',
+                  buttonColor: '#0bb164'
+                });
+              }
+            } else {
               this.setState({
-                sliderCurrValue: tmp,
-                connectionStatus: 'Connected',
-                connectionStatusColor: '#0bb164',
-                buttonText: 'OFF',
-                buttonColor: '#ea1010'
-              });
-            } else{
-              this.setState({
-                sliderCurrValue: tmp,
-                connectionStatus: 'Connected',
-                connectionStatusColor: '#0bb164',
-                buttonText: 'ON',
-                buttonColor: '#0bb164'
+                connectionStatus: 'Connection failure'
               });
             }
-          } else {
-            this.setState({
-              connectionStatus: 'Connection failure'
-            });
-          }
-          this.connectionFree = true;
-        });
+            this.connectionFree = true;
+          });
+        }
       });
     }
   }
@@ -95,37 +108,41 @@ class App extends React.Component {
     if (this.connectionFree) {
       this.connectionFree = false;
       if (this.state.buttonText === 'OFF') {
-        switchReq(this.token, 'on').then(data => {
-          if (data.status === 200) {
-            data.text().then(dataText => {
-              this.setState({
-                sliderCurrValue: parseInt(dataText),
-                buttonText: 'ON',
-                buttonColor: '#0bb164'
+        switchReq(this.token, 'on', this).then(data => {
+          if(data !== undefined){
+            if (data.status === 200) {
+              data.text().then(dataText => {
+                this.setState({
+                  sliderCurrValue: parseInt(dataText),
+                  buttonText: 'ON',
+                  buttonColor: '#0bb164'
+                });
               });
-            });
-          } else {
-            this.setState({
-              connectionStatus: 'Connection failure'
-            });
+            } else {
+              this.setState({
+                connectionStatus: 'Connection failure'
+              });
+            }
+            this.connectionFree = true;
           }
-          this.connectionFree = true;
         });
       } else {
-        switchReq(this.token, 'off').then(data => {
-          if (data.status == 200) {
-            data.text().then(dataText => {
-              this.setState({
-                buttonText: 'OFF',
-                buttonColor: '#ea1010'
+        switchReq(this.token, 'off', this).then(data => {
+          if(data !== undefined){
+            if (data.status === 200) {
+              data.text().then(dataText => {
+                this.setState({
+                  buttonText: 'OFF',
+                  buttonColor: '#ea1010'
+                });
               });
-            });
-          } else {
-            this.setState({
-              connectionStatus: 'Connection failure'
-            });
+            } else {
+              this.setState({
+                connectionStatus: 'Connection failure'
+              });
+            }
+            this.connectionFree = true;
           }
-          this.connectionFree = true;
         });
       }
     }
@@ -141,13 +158,15 @@ class App extends React.Component {
   sendSliderReq(e, value) {
     if(this.connectionFree) {
       this.connectionFree = false;
-      dimmReq(this.token, value).then(data => {
-        if (data.status !== 200) {
-          this.setState({
-            connectionStatus: 'Connection failure'
-          });
+      dimmReq(this.token, value, this).then(data => {
+        if(data !== undefined){
+          if (data.status !== 200) {
+            this.setState({
+              connectionStatus: 'Connection failure'
+            });
+          }
+          this.connectionFree = true;
         }
-        this.connectionFree = true;
       });
     }
   }
@@ -161,35 +180,37 @@ class App extends React.Component {
     if (this.connectionFree) {
       this.connectionFree = false;
       checkStatus().then(data => {
-        let statusCode = data.status;
-        data.text().then(dataText => {
-          this.token = dataText.split(':')[0];
-          if (statusCode == 200) {
-            let tmp = parseInt(dataText.split(':')[1])
-            if(tmp === 0){
+        if(data !== undefined){
+          data.text().then(dataText => {
+            if (data.status === 200) {
+              let statusCode = data.status;
+              this.token = dataText.split(':')[0];
+              let tmp = parseInt(dataText.split(':')[1])
+              if(tmp === 0){
+                this.setState({
+                  sliderCurrValue: tmp,
+                  connectionStatus: 'Connected',
+                  connectionStatusColor: '#0bb164',
+                  buttonText: 'OFF',
+                  buttonColor: '#ea1010'
+                });
+              } else{
+                this.setState({
+                  sliderCurrValue: tmp,
+                  connectionStatus: 'Connected',
+                  connectionStatusColor: '#0bb164',
+                  buttonText: 'ON',
+                  buttonColor: '#0bb164'
+                });
+              }
+            } else {
               this.setState({
-                sliderCurrValue: tmp,
-                connectionStatus: 'Connected',
-                connectionStatusColor: '#0bb164',
-                buttonText: 'OFF',
-                buttonColor: '#ea1010'
-              });
-            } else{
-              this.setState({
-                sliderCurrValue: tmp,
-                connectionStatus: 'Connected',
-                connectionStatusColor: '#0bb164',
-                buttonText: 'ON',
-                buttonColor: '#0bb164'
+                connectionStatus: 'Connection failure'
               });
             }
-          } else {
-            this.setState({
-              connectionStatus: 'Connection failure'
-            });
-          }
-          this.connectionFree = true;
-        });
+            this.connectionFree = true;
+          });
+        }
       });
     }
 
@@ -201,7 +222,7 @@ class App extends React.Component {
     return (
       <div className={"container"}>
         <button
-          className={this.state.connectionStatus !== 'Connected' ? "refresh disabled" : "refresh"}
+          className="refresh"
           onClick={this.handleRefresh}>
           <RefreshIcon
             fontSize={"large"} />
