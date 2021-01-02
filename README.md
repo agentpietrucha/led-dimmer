@@ -4,6 +4,9 @@
 
 ![](images/app%20screenshot.png)
 
+**Screenshot of react.js app:**
+
+![](images/react-app-screenshot.png)
 
 **Photo of working dimmer:**
 ![](images/result.jpg)
