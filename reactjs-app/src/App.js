@@ -3,255 +3,297 @@ import React from 'react';
 import Slider from '@material-ui/core/Slider';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import { withStyles } from '@material-ui/core/styles';
+import Settings from './Settings.js';
 
-function checkStatus(x) {
-  return fetch('http://192.168.1.184:80/auth?key=sawicki', { method: 'GET' })
+
+function checkStatus(ip, x) {
+  return fetch(`http://${ip}/auth?key=sawicki`, { method: 'GET' })
     .then(response => response)
     .then((resp) => {
       return resp;
     }).catch(err => {
       console.log('error auth: ', err);
-      x.setState({
-        connectionStatus: 'Connection failure',
-        connectionStatusColor: 'red'
-      });
+      x.failureState();
     });
 }
 
-function switchReq(token, state, x) {
-  return fetch(`http://192.168.1.184:80/switch/${state}?token=${token}`, { method: 'GET' })
+function switchReq(ip, token, state, x) {
+  return fetch(`http://${ip}/switch/${state}?token=${token}`, { method: 'GET' })
     .then(response => response)
     .then(resp => {
       return resp;
     }).catch(err => {
       console.log('error switch: ', err);
-      x.setState({
-        connectionStatus: 'Connection failure',
-        connectionStatusColor: 'red'
-      });
+      x.failureState();
     });
 }
 
-function dimmReq(token, value, x) {
-  return fetch(`http://192.168.1.184:80/dimm?dimmval=${value}&token=${token}`, { method: 'GET' })
+function dimmReq(ip, token, value, x) {
+  return fetch(`http://${ip}/dimm?dimmval=${value}&token=${token}`, { method: 'GET' })
     .then(response => response)
     .then(resp => {
       return resp;
     }).catch(err => {
       console.log('dimm error: ', err);
-      x.setState({
-        connectionStatus: 'Connection failure',
-        connectionStatusColor: 'red'
-      });
+      x.failureState();
     });
 }
 
-class App extends React.Component {
+
+export default class App extends React.Component{
   constructor(props) {
     super(props);
+    this.ipAddress = null;
     this.connectionFree = true;
-    this.refreshAnimationFree = true;
-    this.token = undefined;
-    this.state = {
-      buttonText: 'OFF',
-      sliderCurrValue: 0,
-      connectionStatus: 'Connecting',
-      connectionStatusColor: 'gray',
-      buttonColor: 'gray',
-      disabled: true,
+    this.token = null;
+
+    if(localStorage.getItem('ip_address')){
+      this.state = {
+        settings: false,
+        sliderCurrValue: 0,
+        connectionStatus: 'Connecting',
+        connectionStatusColor: 'gray',
+        buttonText: 'OFF',
+        buttonColor: 'gray',
+        disabled: true,
+      };
+    } else{
+      this.state = {
+        settings: true,
+        sliderCurrValue: 0,
+        connectionStatus: 'Connecting',
+        connectionStatusColor: 'gray',
+        buttonText: 'OFF',
+        buttonColor: 'gray',
+      };
     }
-    this.handleSlider = this.handleSlider.bind(this);
-    this.handleButton = this.handleButton.bind(this);
-    this.sendSliderReq = this.sendSliderReq.bind(this);
+
+    this.ipAddressHandler = this.ipAddressHandler.bind(this);
     this.handleRefresh = this.handleRefresh.bind(this);
+    this.handleButton = this.handleButton.bind(this);
+    this.handleSlider = this.handleSlider.bind(this);
+    this.sendSliderReq = this.sendSliderReq.bind(this);
+    this.handler = this.handler.bind(this);
+    this.failureState = this.failureState.bind(this);
   }
-  componentDidMount() {
-    if (this.connectionFree) {
-      this.connectionFree = false;
-      checkStatus(this).then(data => {
-        if(data !== undefined){
-          data.text().then(dataText => {
-            if (data.status === 200) {
-              let statusCode = data.status;
-              this.token = dataText.split(':')[0];
-              let tmp = parseInt(dataText.split(':')[1])
-              if(tmp === 0){
-                this.setState({
-                  sliderCurrValue: tmp,
-                  connectionStatus: 'Connected',
-                  connectionStatusColor: '#0bb164',
-                  buttonText: 'OFF',
-                  buttonColor: '#ea1010'
-                });
-              } else{
-                this.setState({
-                  sliderCurrValue: tmp,
-                  connectionStatus: 'Connected',
-                  connectionStatusColor: '#0bb164',
-                  buttonText: 'ON',
-                  buttonColor: '#0bb164'
-                });
-              }
-            } else {
-              this.setState({
-                connectionStatus: 'Connection failure'
-              });
-            }
-            this.connectionFree = true;
-          });
+
+  handler(data){
+    if(data !== undefined){
+      data.text().then(dataText => {
+        if(data.status === 200){
+          this.token = dataText.split(':')[0];
+          let voltage = parseInt(dataText.split(':')[1]);
+          if(voltage === 0){
+            this.setState({
+              settings: false,
+              sliderCurrValue: voltage,
+              connectionStatus: 'Connected',
+              connectionStatusColor: '#0bb164',
+              buttonText: 'OFF',
+              buttonColor: '#ea1010',
+            });
+          } else{
+            this.setState({
+              settings: false,
+              sliderCurrValue: voltage,
+              connectionStatus: 'Connected',
+              connectionStatusColor: '#0bb164',
+              buttonText: 'ON',
+              buttonColor: '#0bb164',
+            });
+          }
+        } else{
+          this.failureState();
         }
       });
+    } else{
+      this.failureState();
     }
   }
 
-  handleButton() {
-    if (this.connectionFree) {
-      this.connectionFree = false;
-      if (this.state.buttonText === 'OFF') {
-        switchReq(this.token, 'on', this).then(data => {
-          if(data !== undefined){
-            if (data.status === 200) {
-              data.text().then(dataText => {
-                this.setState({
-                  sliderCurrValue: parseInt(dataText),
-                  buttonText: 'ON',
-                  buttonColor: '#0bb164'
-                });
-              });
-            } else {
-              this.setState({
-                connectionStatus: 'Connection failure'
-              });
-            }
-            this.connectionFree = true;
-          }
+  failureState(){
+    this.setState({
+      settings: false,
+      connectionStatus: 'Connection failure',
+      connectionStatusColor: 'darkred'
+    });
+  }
+
+  switchHandler(state){
+    let color;
+    if(state === 'on'){
+      color = '#0bb164';
+    } else{
+      color = '#ea1010';
+    }
+
+    switchReq(this.ipAddress, this.token, state, this).then(data => {
+      this.connectionFree = true;
+      if(data !== undefined){
+        if(data.status === 200){
+          data.text().then(dataText => {
+            this.setState({
+              sliderCurrValue: parseInt(dataText),
+              buttonText: state.toUpperCase(),
+              buttonColor: color
+            });
+          });
+        } else{
+          this.setState({
+            // settings: false,
+            connectionStatus: 'Connection failure',
+            connectionStatusColor: 'darkred',
+          });
+        }
+      } else{
+        this.setState({
+          // settings: false,
+          connectionStatus: 'Connection failure',
+          connectionStatusColor: 'darkred',
         });
-      } else {
-        switchReq(this.token, 'off', this).then(data => {
-          if(data !== undefined){
-            if (data.status === 200) {
-              data.text().then(dataText => {
-                this.setState({
-                  buttonText: 'OFF',
-                  buttonColor: '#ea1010'
-                });
-              });
-            } else {
-              this.setState({
-                connectionStatus: 'Connection failure'
-              });
-            }
-            this.connectionFree = true;
-          }
+      }
+    });
+  }
+
+  componentDidMount() {
+    if(localStorage.getItem('ip_address')){
+      this.ipAddress = localStorage.getItem('ip_address');
+
+      if(this.connectionFree){
+        this.connectionFree = false;
+        checkStatus(this.ipAddress, this).then(data => {
+          this.connectionFree = true;
+          this.handler(data);
         });
       }
     }
   }
 
-  handleSlider(e, value) {
+  ipAddressHandler(){
+    this.ipAddress= document.getElementById('ip_address').value;
+    localStorage.setItem('ip_address', this.ipAddress);
+    if(this.connectionFree){
+      this.connectionFree = false;
+      checkStatus(this.ipAddress, this).then(data => {
+        this.connectionFree = true;
+        if(data !== undefined){
+          data.text().then(dataText => {
+            if(data.status === 200){
+              this.token = dataText.split(':')[0];
+              let voltage = parseInt(dataText.split(':')[1]);
+              if(voltage === 0){
+                this.setState({
+                  settings: false,
+                  sliderCurrValue: voltage,
+                  connectionStatus: 'Connected',
+                  connectionStatusColor: '#0bb164',
+                  buttonText: 'OFF',
+                  buttonColor: '#ea1010',
+                });
+              } else{
+                this.setState({
+                  settings: false,
+                  sliderCurrValue: voltage,
+                  connectionStatus: 'Connected',
+                  connectionStatusColor: '#0bb164',
+                  buttonText: 'ON',
+                  buttonColor: '#0bb164',
+                });
+              }
+            } else{
+              this.failureState();
+            }
+          })
+        } else{
+          this.failureState();
+        }
+      })
+    }
+  }
+
+  handleRefresh(){
+    if(this.connectionFree){
+      this.connectionFree = false;
+      checkStatus(this.ipAddress, this).then(data => {
+        this.connectionFree = true;
+        this.handler(data);
+      });
+    }
+  }
+
+  handleButton(e){
+    if(this.connectionFree){
+      this.connectionFree = false;
+      if(this.state.buttonText === 'OFF'){
+        this.switchHandler('on');
+      } else{
+        this.switchHandler('off');
+      }
+    }
+  }
+
+  handleSlider(e, value){
     if(this.state.sliderCurrValue !== value){
       this.setState({
         sliderCurrValue: value
       });
     }
   }
-  sendSliderReq(e, value) {
-    if(this.connectionFree) {
+
+  sendSliderReq(e, value){
+    if(this.connectionFree){
       this.connectionFree = false;
-      dimmReq(this.token, value, this).then(data => {
+      dimmReq(this.ipAddress, this.token, value, this).then(data => {
+        this.connectionFree = true;
         if(data !== undefined){
-          if (data.status !== 200) {
-            this.setState({
-              connectionStatus: 'Connection failure'
-            });
+          if(data.status !== 200){
+            this.failureState();
           }
-          this.connectionFree = true;
+        } else{
+          this.failureState();
         }
       });
     }
   }
 
-  tmp() {
-    document.querySelector('.refresh').classList.remove('refreshRotate');
-    document.querySelector('.refresh').removeEventListener('animationend', this.tmp);
-  }
-
-  handleRefresh(e) {
-    if (this.connectionFree) {
-      this.connectionFree = false;
-      checkStatus().then(data => {
-        if(data !== undefined){
-          data.text().then(dataText => {
-            if (data.status === 200) {
-              let statusCode = data.status;
-              this.token = dataText.split(':')[0];
-              let tmp = parseInt(dataText.split(':')[1])
-              if(tmp === 0){
-                this.setState({
-                  sliderCurrValue: tmp,
-                  connectionStatus: 'Connected',
-                  connectionStatusColor: '#0bb164',
-                  buttonText: 'OFF',
-                  buttonColor: '#ea1010'
-                });
-              } else{
-                this.setState({
-                  sliderCurrValue: tmp,
-                  connectionStatus: 'Connected',
-                  connectionStatusColor: '#0bb164',
-                  buttonText: 'ON',
-                  buttonColor: '#0bb164'
-                });
-              }
-            } else {
-              this.setState({
-                connectionStatus: 'Connection failure'
-              });
-            }
-            this.connectionFree = true;
-          });
-        }
-      });
-    }
-
-    document.querySelector('.refresh').classList.add('refreshRotate');
-    document.querySelector('.refresh').addEventListener('animationend', this.tmp);
-
-  }
-  render() {
-    return (
-      <div className={"container"}>
-        <button
-          className="refresh"
-          onClick={this.handleRefresh}>
-          <RefreshIcon
-            fontSize={"large"} />
-        </button>
-        <button
-          onClick={this.handleButton}
-          className={this.state.connectionStatus !== 'Connected' ? "switchButton disabled" : "switchButton"}
-          style={{ background: this.state.buttonColor }}>
-          {this.state.buttonText}
-        </button>
-        <div className={"connectionStatus"}
-          style={{ background: this.state.connectionStatusColor }}> {/*connection status*/}
-          <span>{this.state.connectionStatus}</span>
+  render(){
+    if(this.state.settings){
+      return(
+        <Settings handler={ this.ipAddressHandler }/>
+      );
+    } else{
+      return(
+        <div className="container">
+          <button
+            className="refresh"
+          onClick={ this.handleRefresh }>
+            <RefreshIcon fontSize="large"/>
+          </button>
+          <button
+            onClick={this.handleButton}
+            className={this.state.connectionStatus !== 'Connected' ? "switchButton disabled" : "switchButton"}
+            style={{ background: this.state.buttonColor }}>
+            { this.state.buttonText }
+          </button>
+          <div
+            className="connectionStatus"
+            style={{ background: this.state.connectionStatusColor }}>
+            <span>{ this.state.connectionStatus }</span>
+          </div>
+          <IOSSlider
+            disabled={ this.state.buttonText === 'OFF' || this.state.connectionStatus !== 'Connected' }
+            value={ this.state.sliderCurrValue }
+            min={0}
+            max={30}
+            step={1}
+            onChange={this.handleSlider}
+            onChangeCommitted={this.sendSliderReq}
+            aria-labelledby="continuous-slider"/>
         </div>
-        <IOSSlider
-          disabled={this.state.buttonText === 'OFF' || this.state.connectionStatus !== "Connected"}
-          value={this.state.sliderCurrValue}
-          min={0}
-          max={30}
-          step={1}
-          onChange={this.handleSlider}
-          onChangeCommitted={this.sendSliderReq}
-          aria-labelledby="continuous-slider" />
-      </div>
-    );
+      );
+    }
   }
-};
-
-export default App;
+}
 const iOSBoxShadow = '0 3px 1px rgba(0,0,0,0.1),0 4px 8px rgba(0,0,0,0.13),0 0 0 1px rgba(0,0,0,0.02)';
 const IOSSlider = withStyles({
   root: {
