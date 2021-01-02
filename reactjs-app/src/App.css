@@ -101,3 +101,28 @@
 .disabled{
   pointer-events: none;
 }
+.settingsContainer{
+  display: flex;
+  flex-direction: row;
+  align-self: center;
+  justify-self: center;
+  justify-content: center;
+  align-items: center;
+}
+.settingsContainer button{
+  margin-left: 25px;
+  background: aquamarine;
+  border: none;
+  outline: none;
+  padding: 12px;
+  border-radius: 4px;
+}
+.settingsContainer button:hover{
+  cursor: hover;
+}
+.settingsContainer button:active{
+  background: #65deb5;
+}
+.settingsContainer input{
+  margin-left: 5px;
+}
