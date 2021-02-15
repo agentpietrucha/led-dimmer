@@ -1,20 +1,25 @@
+html{
+  overflow: hidden;
+}
+body{
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
 .App {
   text-align: center;
 }
-
 .App-logo {
   height: 40vmin;
   pointer-events: none;
 }
-
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
   }
 }
-
 .App-header {
-  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -23,11 +28,9 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
-
 .App-link {
   color: #61dafb;
 }
-
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
@@ -53,6 +56,7 @@
 #root{
   height: 100vh;
   width: 100vw;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -93,21 +97,50 @@
     transform: rotate(360deg);
   }
 }
-@media (max-width: 480px) {
-  .MuiSlider-root{
-    width: 90vw !important;
-  }
-}
 .disabled{
   pointer-events: none;
 }
+.settings{
+  background: none;
+  border: none;
+  position: absolute;
+  right: 40px;
+  top: 100px;
+  outline: none;
+}
+.settings:hover{
+  cursor: pointer;
+}
+.settingsRotate{
+  animation: refresh_spin 0.5s ease-in;
+}
 .settingsContainer{
   display: flex;
-  flex-direction: row;
-  align-self: center;
-  justify-self: center;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: space-evenly;
   align-items: center;
+  background: ghostwhite;
+  border-radius: 2px;
+  box-shadow: -3px 3px 14px -8px;
+  position: absolute;
+  right: 40px;
+  top: 160px;
+  height: 200px;
+  width: 400px;
+  padding: 10px;
+  z-index: 9;
+  opacity: 0;
+  transition: opacity 0.3s ease 0s;
+}
+.settingsContainer label{
+  font-family: sans-serif;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+.settingsContainer label input{
+  border: none;
+  height: 20px;
 }
 .settingsContainer button{
   margin-left: 25px;
@@ -116,13 +149,50 @@
   outline: none;
   padding: 12px;
   border-radius: 4px;
+  top: 20px;
+  position: relative;
 }
 .settingsContainer button:hover{
-  cursor: hover;
+  cursor: pointer;
 }
 .settingsContainer button:active{
   background: #65deb5;
 }
 .settingsContainer input{
   margin-left: 5px;
+}
+@media (max-width: 480px) {
+  .MuiSlider-root{
+    width: 90vw !important;
+  }
+  .settingsContainer{
+    opacity: 1;
+    width: 90%;
+    height: 100%;
+    right: 0;
+    bottom: 0;
+    margin: 0 auto;
+    top: 700px;
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0;
+    padding-top: 100px;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-shadow: 0px -1px 15px -9px;
+    transition: top 0.2s ease-in;
+  }
+  .settingsContainer label:nth-child(1){
+    top: -100px;
+    position: relative;
+  }
+  .settingsContainer label:nth-child(2){
+    top: -200px;
+    position: relative;
+  }
+  .settingsContainer button{
+    top: -250px;
+    position: relative;
+  }
 }

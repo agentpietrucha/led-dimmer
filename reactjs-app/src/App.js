@@ -2,6 +2,7 @@ import './App.css';
 import React from 'react';
 import Slider from '@material-ui/core/Slider';
 import RefreshIcon from '@material-ui/icons/Refresh';
+import SettingsIcon from '@material-ui/icons/Settings';
 import { withStyles } from '@material-ui/core/styles';
 import Settings from './Settings.js';
 
@@ -47,10 +48,11 @@ export default class App extends React.Component{
     this.connectionFree = true;
     this.token = null;
 
-    if(localStorage.getItem('ip_address')){
+    if(localStorage.getItem('ipAddress')){
       this.state = {
         settings: false,
         sliderCurrValue: 0,
+        sliderMaxValue: 100,
         connectionStatus: 'Connecting',
         connectionStatusColor: 'gray',
         buttonText: 'OFF',
@@ -59,12 +61,14 @@ export default class App extends React.Component{
       };
     } else{
       this.state = {
-        settings: true,
+        settings: false,
         sliderCurrValue: 0,
-        connectionStatus: 'Connecting',
+        sliderMaxValue: 100,
+        connectionStatus: 'Set IP address',
         connectionStatusColor: 'gray',
         buttonText: 'OFF',
         buttonColor: 'gray',
+        disabled: true,
       };
     }
 
@@ -75,17 +79,20 @@ export default class App extends React.Component{
     this.sendSliderReq = this.sendSliderReq.bind(this);
     this.handler = this.handler.bind(this);
     this.failureState = this.failureState.bind(this);
+    this.handleSettings = this.handleSettings.bind(this);
+    this.saveHandler = this.saveHandler.bind(this);
+    this.connectingState = this.connectingState.bind(this);
   }
 
   handler(data){
     if(data !== undefined){
+      this.connectingState();
       data.text().then(dataText => {
         if(data.status === 200){
           this.token = dataText.split(':')[0];
           let voltage = parseInt(dataText.split(':')[1]);
           if(voltage === 0){
             this.setState({
-              settings: false,
               sliderCurrValue: voltage,
               connectionStatus: 'Connected',
               connectionStatusColor: '#0bb164',
@@ -94,7 +101,6 @@ export default class App extends React.Component{
             });
           } else{
             this.setState({
-              settings: false,
               sliderCurrValue: voltage,
               connectionStatus: 'Connected',
               connectionStatusColor: '#0bb164',
@@ -119,6 +125,16 @@ export default class App extends React.Component{
     });
   }
 
+  connectingState(){
+    this.setState({
+      connectionStatus: 'Connecting',
+      connectionStatusColor: 'gray',
+      buttonText: 'OFF',
+      buttonColor: 'gray',
+      disabled: true,
+    });
+  }
+
   switchHandler(state){
     let color;
     if(state === 'on'){
@@ -140,14 +156,12 @@ export default class App extends React.Component{
           });
         } else{
           this.setState({
-            // settings: false,
             connectionStatus: 'Connection failure',
             connectionStatusColor: 'darkred',
           });
         }
       } else{
         this.setState({
-          // settings: false,
           connectionStatus: 'Connection failure',
           connectionStatusColor: 'darkred',
         });
@@ -156,9 +170,11 @@ export default class App extends React.Component{
   }
 
   componentDidMount() {
-    if(localStorage.getItem('ip_address')){
-      this.ipAddress = localStorage.getItem('ip_address');
-
+    if(localStorage.getItem('sliderMaxValue')){
+      this.setState({sliderMaxValue: parseInt(localStorage.getItem('sliderMaxValue'))});
+    }
+    if(localStorage.getItem('ipAddress')){
+      this.ipAddress = localStorage.getItem('ipAddress');
       if(this.connectionFree){
         this.connectionFree = false;
         checkStatus(this.ipAddress, this).then(data => {
@@ -170,8 +186,8 @@ export default class App extends React.Component{
   }
 
   ipAddressHandler(){
-    this.ipAddress= document.getElementById('ip_address').value;
-    localStorage.setItem('ip_address', this.ipAddress);
+    this.ipAddress= document.getElementById('ipAddress').value;
+    localStorage.setItem('ipAddress', this.ipAddress);
     if(this.connectionFree){
       this.connectionFree = false;
       checkStatus(this.ipAddress, this).then(data => {
@@ -183,7 +199,6 @@ export default class App extends React.Component{
               let voltage = parseInt(dataText.split(':')[1]);
               if(voltage === 0){
                 this.setState({
-                  settings: false,
                   sliderCurrValue: voltage,
                   connectionStatus: 'Connected',
                   connectionStatusColor: '#0bb164',
@@ -192,7 +207,6 @@ export default class App extends React.Component{
                 });
               } else{
                 this.setState({
-                  settings: false,
                   sliderCurrValue: voltage,
                   connectionStatus: 'Connected',
                   connectionStatusColor: '#0bb164',
@@ -256,42 +270,93 @@ export default class App extends React.Component{
     }
   }
 
-  render(){
-    if(this.state.settings){
-      return(
-        <Settings handler={ this.ipAddressHandler }/>
-      );
-    } else{
-      return(
-        <div className="container">
-          <button
-            className="refresh"
-          onClick={ this.handleRefresh }>
-            <RefreshIcon fontSize="large"/>
-          </button>
-          <button
-            onClick={this.handleButton}
-            className={this.state.connectionStatus !== 'Connected' ? "switchButton disabled" : "switchButton"}
-            style={{ background: this.state.buttonColor }}>
-            { this.state.buttonText }
-          </button>
-          <div
-            className="connectionStatus"
-            style={{ background: this.state.connectionStatusColor }}>
-            <span>{ this.state.connectionStatus }</span>
-          </div>
-          <IOSSlider
-            disabled={ this.state.buttonText === 'OFF' || this.state.connectionStatus !== 'Connected' }
-            value={ this.state.sliderCurrValue }
-            min={0}
-            max={30}
-            step={1}
-            onChange={this.handleSlider}
-            onChangeCommitted={this.sendSliderReq}
-            aria-labelledby="continuous-slider"/>
-        </div>
-      );
+  handleSettings(){
+    if(window.screen.width < 480){ // mobile
+      if(!this.state.settings){
+        document.querySelector('.settingsContainer').style.opacity = 1;
+        document.querySelector('.settingsContainer').style.top = '160px';
+      } else{
+        document.querySelector('.settingsContainer').style.top = '700px';
+      }
+    } else{ // desktop
+      if(!this.state.settings){
+        document.querySelector('.settingsContainer').style.top = '160px';
+        document.querySelector('.settingsContainer').style.opacity = 1;
+      } else{
+        document.querySelector('.settingsContainer').style.opacity = 0;
+      }
     }
+    this.setState({
+      settings: !this.state.settings
+    });
+  }
+
+  saveHandler(){
+    this.ipAddress = document.getElementById('ipAddress').value;
+    localStorage.setItem('ipAddress', this.ipAddress);
+    localStorage.setItem('sliderMaxValue', parseInt(document.getElementById('sliderMaxValue').value));
+
+    if(this.ipAddress !== null && this.ipAddress !== ''){
+      checkStatus(this.ipAddress, this).then(data => {
+        this.connectionFree = true;
+        this.handler(data);
+      });
+      this.setState({
+        settings: false,
+        sliderMaxValue: parseInt(document.getElementById('sliderMaxValue').value),
+      });
+      if(window.screen.width < 480){
+        document.querySelector('.settingsContainer').style.top = '700px';
+      } else{
+        document.querySelector('.settingsContainer').style.opacity = 0;
+      }
+    } else{
+      this.setState({
+        connectionStatus: 'Set IP address',
+        connectionStatusColor: 'gray',
+        buttonText: 'OFF',
+        buttonColor: 'gray',
+        disabled: true,
+      })
+    }
+    window.scrollTo(0, 0);
+  }
+  render(){
+    return(
+      <div className="container">
+        <button
+          className="refresh"
+          onClick={ this.handleRefresh }>
+          <RefreshIcon fontSize="large"/>
+        </button>
+        <button
+          className="settings"
+          onClick={ this.handleSettings }>
+          <SettingsIcon fontSize="large"/>
+        </button>
+        <Settings handler={ this.saveHandler } ipAddress_value={this.ipAddress} sliderMaxValue_value={this.state.sliderMaxValue}/>
+        <button
+          onClick={this.handleButton}
+          className={this.state.connectionStatus !== 'Connected' ? "switchButton disabled" : "switchButton"}
+          style={{ background: this.state.buttonColor }}>
+          { this.state.buttonText }
+        </button>
+        <div
+          className="connectionStatus"
+          style={{ background: this.state.connectionStatusColor }}>
+          <span>{ this.state.connectionStatus }</span>
+        </div>
+        <IOSSlider
+          disabled={ this.state.buttonText === 'OFF' || this.state.connectionStatus !== 'Connected' }
+          value={ this.state.sliderCurrValue }
+          min={0}
+          max={this.state.sliderMaxValue}
+          step={1}
+          onChange={this.handleSlider}
+          onChangeCommitted={this.sendSliderReq}
+          aria-labelledby="continuous-slider"/>
+      </div>
+    );
   }
 }
 const iOSBoxShadow = '0 3px 1px rgba(0,0,0,0.1),0 4px 8px rgba(0,0,0,0.13),0 0 0 1px rgba(0,0,0,0.02)';
@@ -310,7 +375,6 @@ const IOSSlider = withStyles({
     marginLeft: -14,
     '&:focus, &:hover, &$active': {
       boxShadow: '0 3px 1px rgba(0,0,0,0.1),0 4px 8px rgba(0,0,0,0.3),0 0 0 1px rgba(0,0,0,0.02)',
-      // Reset on touch devices, it doesn't add specificity
       '@media (hover: none)': {
         boxShadow: iOSBoxShadow,
       },
