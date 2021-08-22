@@ -1,6 +1,6 @@
-#include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <Preferences.h>
 
 #define LEDSIGNAL 2
 #define ledPin 16
@@ -8,17 +8,14 @@
 int pinVoltage = 10;
 int lastPinVoltage = 10;
 
-const char *ssid = "s1";
-const char *password = "siemanko";
-
 String authToken;
 const String deviceKey = "sawicki";
 bool loginStatus = false;
 
-WebServer server(80);
+const char *ssid = "esp 192.168.1.184";
+const char *password = "12345678";
 
 IPAddress localIP(192, 168, 1, 184);
-// IPAddress localIP(192, 168, 0, 184);
 IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 
@@ -26,13 +23,75 @@ const int freq = 60000;
 const int ledChannel = 0;
 const int resolution = 8;
 
-void blinkLed(int x){
-  for(int i = 0; i < x; i++){
-    digitalWrite(LEDSIGNAL, HIGH);
-    delay(1000);
-    digitalWrite(LEDSIGNAL, LOW);
-    delay(1000);
-  }
+WebServer server(80);
+
+Preferences preferences;
+
+String defaultSHIT = "default shit";
+
+int time1 = 0;
+bool shouldRestart = false;
+
+bool wifiConnected = false;
+
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>setup wifi config</title>
+    <style>
+        input[type=text] {
+            font-size: 50px; 
+            border: 5px solid gray;
+        }
+        input[name="passwd"] {
+            border-top: 0;
+        }
+        input[type=submit] {
+            font-size: 50px; 
+            margin-top: 50px;
+        }
+        form {
+                width: 40%;
+                display: flex; 
+                flex-direction: column;
+            }
+        @media screen and (max-width: 400px) {
+            input[type=text] {
+                font-size: 30px; 
+                border: 4px solid gray;
+            }
+            input[name="passwd"] {
+                border-top: 0;
+            }
+            input[type=submit] {
+                font-size: 30px; 
+                margin-top: 25px;
+            }
+            form {
+                width: 75%;
+                display: flex; 
+                flex-direction: column;
+            }
+        }
+        
+    </style>
+</head>
+<body>
+    <main style="display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw;">
+        <form action="/setup" method="get">
+            <input type="text" name="ssid" id="ssid" placeholder="ssid">
+            <input type="text" name="passwd" id="passwd" placeholder="password">
+            <input type="submit" value="submit">
+        </form>
+    </main>
+</body>
+</html>)rawliteral";
+
+void root(){
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendContent(index_html);
 }
 
 void switchOff(){
@@ -90,36 +149,128 @@ void authenticate(){
   }
 }
 
+void handleSetup(){
+  Serial.println("setup request");
+  Serial.print("arguments:");
+  Serial.println(server.arg("ssid"));
+  Serial.println(server.arg("passwd"));
+
+  String userSSID = server.arg("ssid");
+  String userPASSWD = server.arg("passwd");
+
+  preferences.putString("userSSID", userSSID);
+  preferences.putString("userPASSWD", userPASSWD);
+  
+  server.send(200, "text/plain", "data set");
+  
+  ESP.restart();
+}
+
+void blinkLED(int count){
+  for(int i = 0; i < count; i++){
+    digitalWrite(LEDSIGNAL, HIGH);
+    delay(1000);
+    digitalWrite(LEDSIGNAL, LOW);
+    delay(1000);
+  }
+}
+
+void IRAM_ATTR buttonPressHandler(){
+  detachInterrupt(0);
+  Serial.println("button pressed");
+  Serial.print("time1: ");
+  Serial.print(time1);
+  
+  if(time1 == 0){ // first press
+    time1 = millis();
+  } else{
+
+    int diff = millis() - time1;
+    if(diff <= 2000){
+      shouldRestart = true;
+      time1 = 0;
+      attachInterrupt(0, buttonPressHandler, HIGH);
+      return;
+    } else{
+      time1 = millis();
+      attachInterrupt(0, buttonPressHandler, HIGH);
+      return;
+    }
+
+  }
+  attachInterrupt(0, buttonPressHandler, HIGH);
+}
+
 void setup() {
   Serial.begin(115200);
+  Serial.println("SETUP BEGIN");
+  
+  preferences.begin("dupa", false);
+
   pinMode(LEDSIGNAL, OUTPUT);
-  ledcSetup(ledChannel, freq, resolution);
-  ledcAttachPin(ledPin, ledChannel);
+  pinMode(0, INPUT);
+  attachInterrupt(0, buttonPressHandler, HIGH);
 
-  Serial.print("connecting to: ");
-  Serial.println(ssid);
-  if(!WiFi.config(localIP, gateway, subnet)){
-    Serial.println("STA failed to connect");
-  }
-  WiFi.begin(ssid, password);
-  while(WiFi.status() != WL_CONNECTED){
-    delay(500);
-    Serial.print(".");
-  }
+  if(preferences.getString("userSSID", defaultSHIT) != defaultSHIT){ // there is wifi login data, start normal server
+    if(!WiFi.config(localIP, gateway, subnet)){
+      Serial.println("STA failed to connect");
+    }
 
-  server.on("/auth", HTTP_GET, authenticate);
-  server.on("/switch/on", HTTP_GET, switchOn);
-  server.on("/switch/off", HTTP_GET, switchOff);
-  server.on("/dimm", HTTP_GET, dimm);
+    int wifiConnectionCount = 0;
+    WiFi.begin(preferences.getString("userSSID").c_str(), preferences.getString("userPASSWD").c_str());
+    while(WiFi.status() != WL_CONNECTED && wifiConnectionCount < 20){
+      delay(500);
+      Serial.print(".");
+      wifiConnectionCount++;
+    }
+    if(wifiConnectionCount >= 20){ // connection failure
+      blinkLED(3);
+      preferences.clear();
+      ESP.restart();
+    } else{ // connection successful
+      blinkLED(1);
+      wifiConnected = true;
+    }
+
+    ledcSetup(ledChannel, freq, resolution);
+    ledcAttachPin(ledPin, ledChannel);
+
+    Serial.println("\nWiFi connected");
+    server.on("/auth", HTTP_GET, authenticate);
+    server.on("/switch/on", HTTP_GET, switchOn);
+    server.on("/switch/off", HTTP_GET, switchOff);
+    server.on("/dimm", HTTP_GET, dimm);
+
+  } else{ // no login data, create AP
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(ssid);
+    Serial.println("Wait 100 ms for AP_START...");
+    delay(100);
+    
+    Serial.println("Set softAPConfig");
+    IPAddress Ip(192, 168, 1, 184);
+    IPAddress NMask(255, 255, 255, 0);
+    WiFi.softAPConfig(Ip, Ip, NMask);
+    
+    IPAddress myIP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(myIP);
+
+    server.on("/", HTTP_GET, root);
+    server.on("/setup", HTTP_GET, handleSetup);
+  }
   server.begin();
-
-  blinkLed(3);
-
-  Serial.println("done setup");
 }
 
 void loop() {
-  delay(1);
   server.handleClient();
-  ledcWrite(ledChannel, pinVoltage);
+  if(shouldRestart){
+    blinkLED(2);
+    Serial.print("RESTART: ");
+    Serial.println(preferences.clear());
+    ESP.restart();
+  }
+  if(wifiConnected){
+    ledcWrite(ledChannel, pinVoltage);
+  }
 }
