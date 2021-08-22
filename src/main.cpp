@@ -44,6 +44,10 @@ const char index_html[] PROGMEM = R"rawliteral(
         input[type=text] {
             font-size: 50px; 
             border: 5px solid gray;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0
         }
         input[name="passwd"] {
             border-top: 0;
