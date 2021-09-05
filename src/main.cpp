@@ -1,6 +1,10 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
+#include <DNSServer.h>
+
+DNSServer dnsServer;
+bool dns = false;
 
 #define LEDSIGNAL 2
 #define ledPin 16
@@ -11,9 +15,6 @@ int lastPinVoltage = 10;
 String authToken;
 const String deviceKey = "sawicki";
 bool loginStatus = false;
-
-const char *ssid = "esp 192.168.1.184";
-const char *password = "12345678";
 
 IPAddress localIP(192, 168, 1, 184);
 IPAddress gateway(192, 168, 0, 1);
@@ -94,6 +95,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>)rawliteral";
 
 void root(){
+  Serial.println("root");
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendContent(index_html);
 }
@@ -247,19 +249,23 @@ void setup() {
 
   } else{ // no login data, create AP
     WiFi.mode(WIFI_AP);
-    WiFi.softAP(ssid);
+    WiFi.softAP("LED dimmer");
     Serial.println("Wait 100 ms for AP_START...");
     delay(100);
     
     Serial.println("Set softAPConfig");
-    IPAddress Ip(192, 168, 1, 184);
+    IPAddress Ip(192, 168, 1, 1);
     IPAddress NMask(255, 255, 255, 0);
     WiFi.softAPConfig(Ip, Ip, NMask);
+    Serial.print("Wifi ip: ");
+    dnsServer.start(53, "*", Ip);
+    dns = true;
     
     IPAddress myIP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(myIP);
 
+    server.onNotFound(root);
     server.on("/", HTTP_GET, root);
     server.on("/setup", HTTP_GET, handleSetup);
   }
@@ -267,6 +273,9 @@ void setup() {
 }
 
 void loop() {
+  if(dns){
+    dnsServer.processNextRequest();
+  }
   server.handleClient();
   if(shouldRestart){
     blinkLED(2);
